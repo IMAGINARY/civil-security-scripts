@@ -1,0 +1,127 @@
+#!/bin/bash
+
+if [ "$UID" -ne 0 ]
+then
+    >&2 echo "This script requires superuser priviledges."
+    exit 1
+fi
+
+set -e
+
+# Save current environment
+EXPORTED_ENV=$(export)
+
+# Source config file
+CONFIG_FILE="/etc/default/kiosk"
+if [ -f "${CONFIG_FILE}" ]; then
+    echo "Sourcing config file: ${CONFIG_FILE}"
+    . "${CONFIG_FILE}"
+else
+  echo "No config file available. Using defaults."
+fi
+
+# Restore previous environment such that it takes precendence over the config files
+eval "$EXPORTED_ENV"
+
+REPO_DEFAULT="https://github.com/IMAGINARY/civil-security-scripts.git"
+REPO="${KIOSK_SCRIPTS_REPO:-$REPO_DEFAULT}"
+if [[ -z "${KIOSK_SCRIPTS_REPO}" ]]; then
+  echo "KIOSK_SCRIPTS_REPO environment variable not set. Using default value: ${REPO}"
+else
+  echo "Using KIOSK_SCRIPTS_REPO environment variable. Value: ${REPO}"
+fi
+
+COMMITISH_DEFAULT="main"
+COMMITISH="${KIOSK_SCRIPTS_COMMITISH:-$COMMITISH_DEFAULT}"
+if [[ -z "${KIOSK_SCRIPTS_COMMITISH}" ]]; then
+  echo "KIOSK_SCRIPTS_COMMITISH environment variable not set. Using default value: ${COMMITISH}"
+else
+  echo "Using KIOSK_SCRIPTS_COMMITISH environment variable. Value: ${COMMITISH}"
+fi
+
+# This is basically a copy of ./internal/install-source-from-git, because that
+# file is not available during bootstrapping.
+install_source_from_git() {
+  local COMMITISH REPO_URL INSTALL_DIR
+  COMMITISH="${1}"
+  REPO_URL="${2}"
+  INSTALL_DIR="${3}"
+  
+  # Make sure the folder exists
+  mkdir -p "$INSTALL_DIR"
+
+  cd "$INSTALL_DIR"
+
+  # Set up a new repo or re-use the already existing one
+  git init
+  git remote remove origin &> /dev/null || true
+  git remote add origin "$REPO_URL"
+  git reset --hard
+
+  # Detach HEAD, but only if HEAD points to a commit
+  git rev-parse HEAD &> /dev/null && git checkout --detach
+
+  # Delete all local branches (except for the now detached HEAD)
+  git branch | grep -v "^[*]" | sed 's/^ *//' | xargs -I {} git branch -D "{}"
+
+  # Fetch new data, if any
+  git fetch --tags origin
+
+  # Checkout the requested branch or commit hash
+  git checkout "$COMMITISH"
+}
+
+install() {
+    # don't prompt during installations
+    export DEBIAN_FRONTEND=noninteractive
+    
+    # Install dependencies
+    apt install -yq \
+        arandr \
+        augeas-tools \
+        git \
+        inxi \
+        inputplug \
+        x11-utils \
+        '' # dummy entry to terminate the list
+
+    # retrieve files via git
+    INSTALL_DIR="/opt/kiosk-scripts"
+    mkdir -p "$INSTALL_DIR"
+    cd "$INSTALL_DIR"
+    git init
+
+    # Checkout the requested commit or branch
+    git checkout -f "$COMMITISH" 2> /dev/null || git checkout -f -b "$COMMITISH"
+
+    if [[ $(git status -uno --porcelain) ]]; then
+        echo "There were local changes. Aborting ..."
+        echo "Clean up the git repository in ${INSTALL_DIR} before re-running this script."
+        exit 1
+    else
+        # no local changes, check for remote changes
+
+        EMPTY_TREE_SHA=$(git hash-object -t tree --stdin < /dev/null)
+
+        # When the local repo is empty, use the SHA of the empty repo, because
+        # git rev-parse doesn't work in this situation
+        HASH_BEFORE_UPDATE=$( ( git rev-parse "$COMMITISH" &> /dev/null && git rev-parse "$COMMITISH" ) || echo "$EMPTY_TREE_SHA" )
+
+        install_source_from_git "$COMMITISH" "$REPO" "/opt/kiosk-scripts"
+
+        # When the local repo is empty, use the SHA of the empty repo, because
+        # git rev-parse doesn't work in this situation
+        HASH_AFTER_UPDATE=$( ( git rev-parse "$COMMITISH" &> /dev/null && git rev-parse "$COMMITISH" ) || echo "$EMPTY_TREE_SHA" )
+
+        if [ ! "$HASH_BEFORE_UPDATE" = "$HASH_AFTER_UPDATE" ]; then
+            echo "There were remote changes. Re-running ..."
+            exec "./bin/install/install-kiosk-scripts" "$@"
+        fi
+    fi
+
+    echo "kiosk-scripts files up to date. Running scripts ..."
+
+    ./bin/internal/install-kiosk-scripts-local "$@"
+}
+
+install "$@"

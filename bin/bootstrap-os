@@ -1,0 +1,91 @@
+#!/bin/bash
+
+if [ "$UID" -ne 0 ]; then
+    echo "This script requires superuser priviledges."
+    exec sudo "$0" "$@"
+fi
+
+set -e
+
+bootstrap() {
+    # don't prompt during installations
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Add Xpra repository
+    wget -q -O "/usr/share/keyrings/xpra.asc" https://xpra.org/gpg.asc
+    wget -q -O "/etc/apt/sources.list.d/xpra.sources" https://raw.githubusercontent.com/Xpra-org/xpra/master/packaging/repos/noble/xpra.sources
+
+    # Add nodejs repository
+    curl -sL https://deb.nodesource.com/setup_22.x | bash -
+
+    # Add Jeff250's Xorg repository containing the modesetting driver with TearFree option
+    add-apt-repository -y ppa:jeff250/xserver-xorg-with-tearfree-modesetting
+
+    # Update the list of available packages
+    apt update
+
+    # Update all currently installed packages
+    apt upgrade -y
+
+    # Preconfigure some Debian packages to avoid interactive prompts
+    echo "jackd2 jackd/tweak_rt_limits boolean true" | debconf-set-selections
+
+    # Install some useful packages
+    apt install -yq --no-install-recommends \
+        aconnectgui \
+        barrier \
+        curl \
+        drumstick-tools \
+        feh \
+        ffmpeg \
+        git \
+        htop \
+        intel-gpu-tools \
+        jackd2 \
+        joystick \
+        mesa-utils \
+        net-tools \
+        nodejs \
+        openbox \
+        openssh-server \
+        overlayroot \
+        pavucontrol \
+        picom \
+        qjackctl \
+        qsynth \
+        ranger \
+        scrot \
+        vmpk \
+        x11vnc \
+        xpra \
+        xterm \
+        '' # dummy entry to terminate the list
+
+    # Add the kiosk user to the audio group for accessing the realtime permissions
+    # as set up by jackd above
+    adduser kiosk audio
+
+    # Fetch and execute kiosk-scripts installer; put kiosk-scripts into PATH
+    local INSTALL_KIOSK_SCRIPTS_ARGS=()
+    if [[ "$*" == *--no-update-grub* ]]; then
+        INSTALL_KIOSK_SCRIPTS_ARGS+=("--no-update-grub")
+    fi
+    if [[ "$*" == *--confirm-rsync-overwrite* ]]; then
+        INSTALL_KIOSK_SCRIPTS_ARGS+=("--confirm-rsync-overwrite")
+    fi
+    TMP_KIOSK_SCRIPTS_DIR="$(mktemp -d --suffix -civil-security-kiosk-scripts)"
+    git clone --depth 1 https://github.com/IMAGINARY/civil-security-scripts "${TMP_KIOSK_SCRIPTS_DIR}"
+    bash "${TMP_KIOSK_SCRIPTS_DIR}/bin/install/install-kiosk-scripts" "${INSTALL_KIOSK_SCRIPTS_ARGS[@]}"
+    rm -r "${TMP_KIOSK_SCRIPTS_DIR}"
+    source "/opt/kiosk-scripts/rootfs/etc/profile.d/kiosk-bin-path.sh"
+
+    # Install dependencies common to many exhibits
+    install-kiosk-browser
+
+    # Install the exhibits
+
+    # Run the kiosk-config script
+    ASK_TO_REBOOT=1 /opt/kiosk-scripts/bin/kiosk-config
+}
+
+bootstrap "$@"

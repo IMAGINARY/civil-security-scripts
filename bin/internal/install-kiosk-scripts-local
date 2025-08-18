@@ -1,0 +1,52 @@
+#!/bin/bash
+
+if [ "$UID" -ne 0 ]
+then
+    >&2 echo "This script requires superuser priviledges."
+    exit 1
+fi
+
+set -e
+
+USAGE_STRING="Usage: $0 [--help|--confirm-rsync-overwrite|--no-update-grub]"
+
+if [[ "$*" == *--help* ]]; then
+    echo "$USAGE_STRING"
+    exit
+fi
+
+# cd into script directory
+cd "$(dirname -- "$0")"
+
+# sync the rootfs
+./sync-rootfs "$@"
+
+# disable the network time synchronization (time should be set via BIOS)
+# systemctl disable systemd-timesyncd.service
+
+# enable timer to automatically power-off the station
+# systemctl daemon-reload
+# systemctl reenable --now systemd-poweroff.timer
+# systemctl start systemd-poweroff.timer
+
+# restart NetworkManager to apply changes made by sync-rootfs
+systemctl restart NetworkManager
+
+# modify configuration files on the host
+./modify-os-cfg
+
+# disable checking for updates, auto updates, upgrades and notifications
+apt remove -yq update-manager
+./disable-auto-updates
+systemctl disable apt-daily.service apt-daily-upgrade.service
+systemctl disable apt-daily.timer apt-daily-upgrade.timer
+
+# update dconf setting based on rsynced config files
+dconf update
+
+# update grub menu
+if [[ "$*" == *--no-update-grub* ]]; then
+    echo "Skipping update-grub due to --no-update-grub."
+else
+    update-grub
+fi

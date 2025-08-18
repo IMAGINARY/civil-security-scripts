@@ -1,0 +1,9 @@
+[Unit]
+Description=Automatic Reboot
+
+[Timer]
+OnCalendar=04:00
+Persistent=false
+
+[Install]
+WantedBy=multi-user.target

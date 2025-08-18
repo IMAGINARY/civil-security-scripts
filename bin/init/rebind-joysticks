@@ -1,0 +1,53 @@
+#!/usr/bin/bash
+# The device ids of joysticks depend on the order they have been detected by the OS.
+# During boot, small differences in the duration devices need for initialization
+# may therefore result in different device ids for the same joystick across reboots.
+#
+# This scripts unbinds all joysticks connected to the system and rebinds them one
+# after the other in sorted order (according to their path in sysfs).
+
+echo "Ensuring deterministic assignment of joysticks to device ids."
+
+echo
+echo "The following joysticks/gamepads are present in the system:"
+DEVICES=(/sys/class/input/js*)
+CANONICAL_DEVICES=()
+for DEVICE in "${DEVICES[@]}"; do
+  CANONICAL_DEVICE=$(readlink -f "$DEVICE/device/device")
+  CANONICAL_DEVICES+=("$CANONICAL_DEVICE")
+  echo "$DEVICE: $CANONICAL_DEVICE"
+done
+
+echo
+echo "Unbinding all joysticks ..."
+# Unbind all joysticks in sorted order
+# Sort the devices by their sysfs path and store the driver path in an associative array
+readarray -t CANONICAL_DEVICES_SORTED < <(printf '%s\n' "${CANONICAL_DEVICES[@]}" | sort)
+declare -A DRIVER
+for CANONICAL_DEVICE in "${CANONICAL_DEVICES_SORTED[@]}"; do
+  echo "  Unbinding $CANONICAL_DEVICE"
+  DEVICE_ID="$(basename "$CANONICAL_DEVICE")"
+  DRIVER["$DEVICE_ID"]="$(readlink -f "$CANONICAL_DEVICE/driver")"
+  echo "$DEVICE_ID" > "${DRIVER["$DEVICE_ID"]}/unbind"
+  while [ -d "$CANONICAL_DEVICE/driver" ]; do
+    sleep 0.01s
+  done
+done
+
+echo
+echo "Re-binding the devices in sorted order ..."
+for CANONICAL_DEVICE in "${CANONICAL_DEVICES_SORTED[@]}"; do
+  echo "  Binding $CANONICAL_DEVICE"
+  DEVICE_ID="$(basename "$CANONICAL_DEVICE")"
+  echo "$DEVICE_ID" > "${DRIVER["$DEVICE_ID"]}/bind"
+  while ! [ -d "$CANONICAL_DEVICE/driver" ]; do
+    sleep 0.01s
+  done
+done
+
+echo
+echo "Result:"
+for DEVICE in /sys/class/input/js*; do
+  CANONICAL_DEVICE=$(readlink -f "$DEVICE/device/device")
+  echo "$DEVICE: $CANONICAL_DEVICE"
+done

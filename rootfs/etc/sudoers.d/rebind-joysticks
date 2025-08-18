@@ -1,0 +1,1 @@
+ALL ALL = (ALL) NOPASSWD:SETENV: /opt/kiosk-scripts/bin/init/rebind-joysticks
