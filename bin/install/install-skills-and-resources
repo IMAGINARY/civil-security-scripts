@@ -1,0 +1,26 @@
+#!/bin/bash
+
+set -e
+
+COMMITISH="ad24e2dda8e4286d3e58a6624d3d24bf294128fd"
+REPO_URL="https://github.com/IMAGINARY/skills-and-resources"
+INSTALL_DIR="/opt/skills-and-resources"
+
+"${BASH_SOURCE%/*}/../internal/install-source-from-git" "$COMMITISH" "$REPO_URL" "$INSTALL_DIR"
+
+apt update
+apt install -yq --no-install-recommends \
+  build-essential \
+  libacsccid1 \
+  libpcsclite-dev \
+  pcscd \
+  pcsc-tools \
+  "" # dummy entry to terminate the list
+
+# Build the project
+cd "$INSTALL_DIR" || exit 1
+corepack enable
+corepack use npm@11
+npm install
+npm run build
+corepack disable
