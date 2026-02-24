@@ -1,0 +1,2 @@
+#!/usr/bin/bash
+exec /opt/skills-and-resources/tools/rebind-smartcard-readers

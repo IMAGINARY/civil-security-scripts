@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# cd into script directory
+cd "$(dirname -- "$0")" || exit
+
+# rebind the smartcard readers to ensure correct mapping
+sudo ./rebind-smartcard-readers
