@@ -16,7 +16,7 @@ bootstrap() {
     wget -q -O "/etc/apt/sources.list.d/xpra.sources" https://raw.githubusercontent.com/Xpra-org/xpra/master/packaging/repos/noble/xpra.sources
 
     # Add nodejs repository
-    curl -sL https://deb.nodesource.com/setup_22.x | bash -
+    curl -sL https://deb.nodesource.com/setup_24.x | bash -
 
     # Add Jeff250's Xorg repository containing the modesetting driver with TearFree option
     add-apt-repository -y ppa:jeff250/xserver-xorg-with-tearfree-modesetting
