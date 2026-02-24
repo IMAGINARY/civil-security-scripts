@@ -10,55 +10,11 @@ function finish {
 }
 trap finish SIGINT SIGTERM EXIT
 
-APP_DIR="/opt/skills-and-resources"
-
-# Configuration
-CIVIL_SECURITY_SKILLS_AND_RESOURCES_INVENTORY_TOKEN_READER_DEFAULT="ACS ACR122U 00 00"
-if [[ -z "${CIVIL_SECURITY_SKILLS_AND_RESOURCES_INVENTORY_TOKEN_READER}" ]]; then
-  echo "CIVIL_SECURITY_SKILLS_AND_RESOURCES_INVENTORY_TOKEN_READER environment variable not set. Using default value: ${CIVIL_SECURITY_SKILLS_AND_RESOURCES_INVENTORY_TOKEN_READER_DEFAULT}"
-  export CIVIL_SECURITY_SKILLS_AND_RESOURCES_INVENTORY_TOKEN_READER="$CIVIL_SECURITY_SKILLS_AND_RESOURCES_INVENTORY_TOKEN_READER_DEFAULT"
-else
-  echo "Using CIVIL_SECURITY_SKILLS_AND_RESOURCES_INVENTORY_TOKEN_READER environment variable. Value: ${CIVIL_SECURITY_SKILLS_AND_RESOURCES_INVENTORY_TOKEN_READER}"
-fi
-
-CIVIL_SECURITY_SKILLS_AND_RESOURCES_CHALLENGE_TOKEN_READER_DEFAULT="ACS ACR122U 01 00"
-if [[ -z "${CIVIL_SECURITY_SKILLS_AND_RESOURCES_CHALLENGE_TOKEN_READER}" ]]; then
-  echo "CIVIL_SECURITY_SKILLS_AND_RESOURCES_CHALLENGE_TOKEN_READER environment variable not set. Using default value: ${CIVIL_SECURITY_SKILLS_AND_RESOURCES_CHALLENGE_TOKEN_READER_DEFAULT}"
-  export CIVIL_SECURITY_SKILLS_AND_RESOURCES_CHALLENGE_TOKEN_READER="$CIVIL_SECURITY_SKILLS_AND_RESOURCES_CHALLENGE_TOKEN_READER_DEFAULT"
-else
-  echo "Using CIVIL_SECURITY_SKILLS_AND_RESOURCES_CHALLENGE_TOKEN_READER environment variable. Value: ${CIVIL_SECURITY_SKILLS_AND_RESOURCES_CHALLENGE_TOKEN_READER}"
-fi
-
-
-# Launch the token reader daemon in the background
-npm run --prefix "$APP_DIR" token-reader -- serve \
-  -i "${CIVIL_SECURITY_SKILLS_AND_RESOURCES_INVENTORY_TOKEN_READER}" \
- -c "${CIVIL_SECURITY_SKILLS_AND_RESOURCES_CHALLENGE_TOKEN_READER}" \
-  &
-PID=$!
-PIDS="$PIDS $PID"
-
-# Kiosk browser options
-QUERY_STRING=""
-# Configure sentry.io data source name (dsn)
-if [ ! -z "${CIVIL_SECURITY_SKILLS_AND_RESOURCES_SENTRY_DSN}" ]; then
-    QUERY_STRING="${QUERY_STRING}&sentry-dsn=${CIVIL_SECURITY_SKILLS_AND_RESOURCES_SENTRY_DSN}"
-fi
+# Launch the token reader in the background
+"${BASH_SOURCE%/*}/exhibit-skills-and-resources-token-reader" &
 
 # Launch the exhibit frontend in the background
-kiosk-browser $KIOSK_OPTS \
-    --kiosk \
-    --cover-displays "0,1" \
-    --disable-drag \
-    --disable-selection \
-    --overflow=hidden \
-    --reload-idle "$((10 * 60))" \
-    --reload-unresponsive 60 \
-    --serve "$APP_DIR/dist" \
-    "index.html?${QUERY_STRING}"
-
-PID_UI=$!
-PIDS="$PIDS $PID_UI"
+"${BASH_SOURCE%/*}/exhibit-skills-and-resources-app" &
 
 # Wait for the exhibit to finish or until the signal trap is triggered
 wait -n $PIDS
