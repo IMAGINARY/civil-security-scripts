@@ -21,6 +21,9 @@ cd "$(dirname -- "$0")"
 # sync the rootfs
 ./sync-rootfs "$@"
 
+# fix sudoers.d permissions (git does not preserve them correctly)
+chmod 440 /etc/sudoers.d/*
+
 # disable the network time synchronization (time should be set via BIOS)
 # systemctl disable systemd-timesyncd.service
 
