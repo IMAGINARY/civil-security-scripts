@@ -1,0 +1,17 @@
+#!/bin/bash
+
+set -e
+
+COMMITISH="7bffd301819e865dd1f68913dd991a28a00cca69"
+REPO_URL="https://github.com/IMAGINARY/awareness-map"
+INSTALL_DIR="/opt/awareness-map"
+
+"${BASH_SOURCE%/*}/../internal/install-source-from-git" "$COMMITISH" "$REPO_URL" "$INSTALL_DIR"
+
+# Build the project
+cd "$INSTALL_DIR" || exit 1
+corepack enable
+corepack use npm@11
+npm install
+npm run build
+corepack disable
