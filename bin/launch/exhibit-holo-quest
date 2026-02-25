@@ -1,0 +1,49 @@
+#!/bin/bash
+# This wrapper script is supposed to be visible in ps -a resp. ps -u `id -u` to make
+# it easy to kill it (by a script or manually)
+
+PIDS=""
+function finish {
+    EXIT_CODE=$?
+    kill $PIDS >/dev/null 2>&1
+    exit $EXIT_CODE
+}
+trap finish SIGINT SIGTERM EXIT
+
+APP_DIR="/opt/holo-quest"
+
+# Kiosk browser options
+QUERY_STRING=""
+
+# Configure logging level
+if [ ! -z "${CIVIL_SECURITY_HOLO_QUEST_LOG_LEVEL}" ]; then
+    QUERY_STRING="${QUERY_STRING}&log=${CIVIL_SECURITY_HOLO_QUEST_LOG_LEVEL}"
+fi
+
+# Configure settings file
+if [ ! -z "${CIVIL_SECURITY_HOLO_QUEST_SETTINGS_FILE}" ]; then
+    QUERY_STRING="${QUERY_STRING}&settings=${CIVIL_SECURITY_HOLO_QUEST_SETTINGS_FILE}"
+fi
+
+# Configure sentry.io data source name (dsn)
+if [ ! -z "${CIVIL_SECURITY_HOLO_QUEST_SENTRY_DSN}" ]; then
+    QUERY_STRING="${QUERY_STRING}&sentry-dsn=${CIVIL_SECURITY_HOLO_QUEST_SENTRY_DSN}"
+fi
+
+# Launch the exhibit frontend in the background
+kiosk-browser $KIOSK_OPTS \
+    --cover-displays "0,1" \
+    --disable-drag \
+    --disable-selection \
+    --overflow=hidden \
+    --reload-idle "$((10 * 60))" \
+    --reload-unresponsive 60 \
+    --serve "$APP_DIR" \
+    "dist/index.html?${QUERY_STRING}"
+
+PID_UI=$!
+PIDS="$PIDS $PID_UI"
+
+# Wait for the exhibit to finish or until the signal trap is triggered
+wait -n $PIDS
+exit $?

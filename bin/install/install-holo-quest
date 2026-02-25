@@ -1,0 +1,17 @@
+#!/bin/bash
+
+set -e
+
+COMMITISH="aa6d0e9d16acb1103eced43da75168bb4c45b3d0"
+REPO_URL="https://github.com/IMAGINARY/holo-quest"
+INSTALL_DIR="/opt/holo-quest"
+
+"${BASH_SOURCE%/*}/../internal/install-source-from-git" "$COMMITISH" "$REPO_URL" "$INSTALL_DIR"
+
+# Build the project
+cd "$INSTALL_DIR" || exit 1
+corepack enable
+corepack use npm@11
+npm install
+npm run build
+corepack disable
