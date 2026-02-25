@@ -36,7 +36,7 @@ kiosk-browser $KIOSK_OPTS \
     --disable-drag \
     --disable-selection \
     --overflow=hidden \
-    --reload-idle "$((10 * 60))" \
+    --reload-idle "$((3 * 60))" \
     --reload-unresponsive 60 \
     --serve "$APP_DIR" \
     "dist/index.html?${QUERY_STRING}"
