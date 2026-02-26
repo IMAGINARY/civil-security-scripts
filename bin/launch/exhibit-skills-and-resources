@@ -12,9 +12,15 @@ trap finish SIGINT SIGTERM EXIT
 
 # Launch the token reader in the background
 "${BASH_SOURCE%/*}/exhibit-skills-and-resources-token-reader" &
+PID_TOKEN_READER=$!
+PIDS="$PIDS $PID_TOKEN_READER"
+
 
 # Launch the exhibit frontend in the background
 "${BASH_SOURCE%/*}/exhibit-skills-and-resources-app" &
+PID_UI=$!
+PIDS="$PIDS $PID_UI"
+
 
 # Wait for the exhibit to finish or until the signal trap is triggered
 wait -n $PIDS
