@@ -13,6 +13,10 @@ KIOSK_SCRIPTS_COMMITISH="main"
 # This is an array of even length containing the device node/output name pairs.
 # Example:
 # TOUCH_SCREEN_OUTPUT_MAP=(/dev/input/by-path/pci-0000:00:14.0-usb-0:2.2:1.0-event DP-1 /dev/input/event5 HDMI-1)
+# Test Dual-Multitouch display:
+# TOUCH_SCREEN_OUTPUT_MAP=(/dev/input/by-path/pci-0000:00:14.0-usb-0:1.1:1.0-event DP-3-8 /dev/input/by-path/pci-0000:00:14.0-usb-0:1.2:1.0-event DP-3-1)
+# Skills & Resources final hardware:
+#TOUCH_SCREEN_OUTPUT_MAP=(/dev/input/by-path/pci-0000:00:14.0-usbv2-0:2.1:1.0-event HDMI-1 /dev/input/by-path/pci-0000:00:14.0-usb-0:3.2:1.0-event HDMI-2)
 TOUCH_SCREEN_OUTPUT_MAP=()
 
 # Init script to run before launching the exhibit
