@@ -12,24 +12,6 @@ trap finish SIGINT SIGTERM EXIT
 
 APP_DIR="/opt/holo-quest"
 
-# Kiosk browser options
-QUERY_STRING=""
-
-# Configure logging level
-if [ ! -z "${CIVIL_SECURITY_HOLO_QUEST_LOG_LEVEL}" ]; then
-    QUERY_STRING="${QUERY_STRING}&log=${CIVIL_SECURITY_HOLO_QUEST_LOG_LEVEL}"
-fi
-
-# Configure settings file
-if [ ! -z "${CIVIL_SECURITY_HOLO_QUEST_SETTINGS_FILE}" ]; then
-    QUERY_STRING="${QUERY_STRING}&settings=${CIVIL_SECURITY_HOLO_QUEST_SETTINGS_FILE}"
-fi
-
-# Configure sentry.io data source name (dsn)
-if [ ! -z "${CIVIL_SECURITY_HOLO_QUEST_SENTRY_DSN}" ]; then
-    QUERY_STRING="${QUERY_STRING}&sentry-dsn=${CIVIL_SECURITY_HOLO_QUEST_SENTRY_DSN}"
-fi
-
 # Launch the exhibit frontend in the background
 kiosk-browser $KIOSK_OPTS \
     --cover-displays "0,1" \
@@ -39,7 +21,7 @@ kiosk-browser $KIOSK_OPTS \
     --reload-idle "$((3 * 60))" \
     --reload-unresponsive 60 \
     --serve "$APP_DIR" \
-    "dist/index.html?${QUERY_STRING}"
+    "dist/index.html?${CIVIL_SECURITY_HOLO_QUEST_QUERY_STRING}"
 
 PID_UI=$!
 PIDS="$PIDS $PID_UI"
