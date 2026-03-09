@@ -28,7 +28,8 @@ kiosk-browser $KIOSK_OPTS \
     --reload-idle "$((10 * 60))" \
     --reload-unresponsive 60 \
     --serve "$APP_DIR/dist" \
-    "index.html?${QUERY_STRING}"
+    "index.html?${QUERY_STRING}" \
+    &
 
 PID_UI=$!
 PIDS="$PIDS $PID_UI"
