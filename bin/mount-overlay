@@ -1,0 +1,161 @@
+#!/bin/bash
+set -euo pipefail
+
+usage() {
+    cat <<'EOF'
+Usage: mount-overlay --lowerdir <path> [--lowerdir <path> ...]
+                     [--upperdir <path> --workdir <path>]
+                     [--mountpoint <path> | --tmp]
+
+Mount an overlay filesystem.
+
+Options:
+  --lowerdir <path>    Lower (read-only) directory for the overlay. Can be
+                       specified multiple times. At least one is required.
+                       Multiple lower directories are stacked top-to-bottom
+                       in the order given.
+  --upperdir <path>    Upper (writable) directory for the overlay. Must be
+                       used together with --workdir.
+  --workdir <path>     Work directory for the overlay. Must be used together
+                       with --upperdir.
+  --mountpoint <path>  Directory to mount the overlay on. Mutually exclusive
+                       with --tmp.
+  --tmp                Create a temporary directory as the mount point.
+                       Mutually exclusive with --mountpoint.
+  --help               Show this help message and exit.
+
+If neither --mountpoint nor --tmp is specified, the first --lowerdir path is
+used as the mount point.
+EOF
+}
+
+# Escape a path for use in overlay mount option values.
+# The overlay driver uses ':' as a separator and '\' as an escape character,
+# so both must be escaped within individual path values.
+escape_overlay_path() {
+    local path="$1"
+    # Escape backslashes first, then colons.
+    path="${path//\\/\\\\}"
+    path="${path//:/\\:}"
+    printf '%s' "$path"
+}
+
+LOWERDIRS=()
+UPPERDIR=""
+WORKDIR=""
+MOUNTPOINT=""
+USE_TMP=false
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --lowerdir)
+            if [[ $# -lt 2 ]]; then
+                echo "Error: --lowerdir requires a path argument." >&2
+                exit 1
+            fi
+            LOWERDIRS+=("$2")
+            shift 2
+            ;;
+        --upperdir)
+            if [[ $# -lt 2 ]]; then
+                echo "Error: --upperdir requires a path argument." >&2
+                exit 1
+            fi
+            UPPERDIR="$2"
+            shift 2
+            ;;
+        --workdir)
+            if [[ $# -lt 2 ]]; then
+                echo "Error: --workdir requires a path argument." >&2
+                exit 1
+            fi
+            WORKDIR="$2"
+            shift 2
+            ;;
+        --mountpoint)
+            if [[ $# -lt 2 ]]; then
+                echo "Error: --mountpoint requires a path argument." >&2
+                exit 1
+            fi
+            MOUNTPOINT="$2"
+            shift 2
+            ;;
+        --tmp)
+            USE_TMP=true
+            shift
+            ;;
+        --help)
+            usage
+            exit 0
+            ;;
+        --)
+            shift
+            break
+            ;;
+        *)
+            echo "Error: Unknown argument: $1" >&2
+            usage >&2
+            exit 1
+            ;;
+    esac
+done
+
+if [[ $# -gt 0 ]]; then
+    echo "Error: Unexpected arguments: $*" >&2
+    usage >&2
+    exit 1
+fi
+
+# --- Validation ---
+
+if [[ ${#LOWERDIRS[@]} -eq 0 ]]; then
+    echo "Error: At least one --lowerdir must be specified." >&2
+    exit 1
+fi
+
+if [[ -n "$UPPERDIR" && -z "$WORKDIR" ]]; then
+    echo "Error: --upperdir requires --workdir to be specified as well." >&2
+    exit 1
+fi
+
+if [[ -z "$UPPERDIR" && -n "$WORKDIR" ]]; then
+    echo "Error: --workdir requires --upperdir to be specified as well." >&2
+    exit 1
+fi
+
+if [[ -n "$MOUNTPOINT" && "$USE_TMP" == true ]]; then
+    echo "Error: --mountpoint and --tmp are mutually exclusive." >&2
+    exit 1
+fi
+
+# --- Resolve mount point ---
+
+if [[ -n "$MOUNTPOINT" ]]; then
+    : # Use the explicitly provided mount point.
+elif [[ "$USE_TMP" == true ]]; then
+    MOUNTPOINT="$(mktemp -d)"
+else
+    MOUNTPOINT="${LOWERDIRS[0]}"
+fi
+
+# --- Build mount options ---
+
+LOWERDIR_OPT=""
+for dir in "${LOWERDIRS[@]}"; do
+    if [[ -n "$LOWERDIR_OPT" ]]; then
+        LOWERDIR_OPT+=":"
+    fi
+    LOWERDIR_OPT+="$(escape_overlay_path "$dir")"
+done
+
+MOUNT_OPTS="lowerdir=${LOWERDIR_OPT}"
+
+if [[ -n "$UPPERDIR" ]]; then
+    MOUNT_OPTS+=",upperdir=$(escape_overlay_path "$UPPERDIR")"
+    MOUNT_OPTS+=",workdir=$(escape_overlay_path "$WORKDIR")"
+fi
+
+# --- Mount the overlay ---
+
+mount -t overlay overlay -o "$MOUNT_OPTS" "$MOUNTPOINT"
