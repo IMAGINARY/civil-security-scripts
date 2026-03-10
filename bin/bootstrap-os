@@ -55,6 +55,7 @@ bootstrap() {
         qsynth \
         ranger \
         scrot \
+        uidmap \
         vmpk \
         x11vnc \
         xpra \

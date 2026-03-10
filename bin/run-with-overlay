@@ -1,0 +1,76 @@
+#!/bin/bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+usage() {
+    cat <<'EOF'
+Usage: run-with-overlay [mount-overlay options...] -- <command> [args...]
+
+Mount an overlay filesystem and execute a command within it.
+
+All options before '--' are forwarded to mount-overlay. The arguments after
+'--' are executed as a command once the overlay has been mounted.
+
+The overlay is set up inside a user and mount namespace (via unshare), so no
+root privileges are required. The command is run as the original (real) user.
+
+Example:
+  run-with-overlay --lowerdir /lower --tmp -- ls -la
+
+Run 'mount-overlay --help' for available mount options.
+EOF
+}
+
+# Record real UID/GID before any unshare changes them.
+real_uid=$(id -u)
+real_gid=$(id -g)
+
+# Separate mount-overlay options from the command.
+mount_opts=()
+cmd=()
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --help)
+            usage
+            exit 0
+            ;;
+        --)
+            shift
+            cmd=("$@")
+            break
+            ;;
+        *)
+            mount_opts+=("$1")
+            shift
+            ;;
+    esac
+done
+
+if [[ ${#cmd[@]} -eq 0 ]]; then
+    echo "Error: No command specified. Use '--' to separate mount options from the command." >&2
+    usage >&2
+    exit 1
+fi
+
+# Pass the count of mount-overlay options so the inner script can split
+# positional arguments without re-parsing for '--'.
+# Single quotes are intentional; the inner script's variables must be expanded
+# by the inner bash, not the outer shell.
+# shellcheck disable=SC2016
+exec unshare -r --cgroup --mount -- bash -c '
+    set -euo pipefail
+    mount_overlay="$1"; shift
+    real_uid="$1"; shift
+    real_gid="$1"; shift
+    n_mount_opts="$1"; shift
+
+    "$mount_overlay" "${@:1:n_mount_opts}"
+    shift "$n_mount_opts"
+
+    exec unshare \
+        --map-users="$real_uid":0:1 \
+        --map-groups="$real_gid":0:1 \
+        -- "$@"
+' _ "$SCRIPT_DIR/mount-overlay" "$real_uid" "$real_gid" \
+    "${#mount_opts[@]}" "${mount_opts[@]}" "${cmd[@]}"
