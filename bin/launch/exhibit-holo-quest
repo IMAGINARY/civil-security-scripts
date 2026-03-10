@@ -11,17 +11,28 @@ function finish {
 trap finish SIGINT SIGTERM EXIT
 
 APP_DIR="/opt/holo-quest"
+APP_DIST_DIR="$APP_DIR/dist"
+USER_OVERLAY_DIR="$HOME/.config/holo-quest/overlay"
 
-# Launch the exhibit frontend in the background
-kiosk-browser $KIOSK_OPTS \
-    --cover-displays "0,1" \
-    --disable-drag \
-    --disable-selection \
-    --overflow=hidden \
-    --reload-idle "$((3 * 60))" \
-    --reload-unresponsive 60 \
-    --serve "$APP_DIR" \
-    "dist/index.html?${CIVIL_SECURITY_HOLO_QUEST_QUERY_STRING}"
+mkdir -p "$USER_OVERLAY_DIR"
+touch "$USER_OVERLAY_DIR/settings.yml"
+
+# Overlay the user-supplied config on top of the exhibit-supplied config and
+# launch the exhibit frontend in the background
+run-with-overlay \
+    --lowerdir "$APP_DIST_DIR" \
+    --lowerdir "$USER_OVERLAY_DIR" \
+    -- \
+    kiosk-browser $KIOSK_OPTS \
+        --cover-displays "0,1" \
+        --disable-drag \
+        --disable-selection \
+        --overflow=hidden \
+        --reload-idle "$((3 * 60))" \
+        --reload-unresponsive 60 \
+        --serve "$APP_DIST_DIR" \
+        "index.html?${CIVIL_SECURITY_HOLO_QUEST_QUERY_STRING}" \
+&
 
 PID_UI=$!
 PIDS="$PIDS $PID_UI"
