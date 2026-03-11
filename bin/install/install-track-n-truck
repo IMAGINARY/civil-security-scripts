@@ -2,16 +2,14 @@
 
 set -e
 
-COMMITISH="681960d0612d7ebbf35de2ff991c65353fa5cb91"
+COMMITISH="41cd87b9c0c4c4ff656f131037ce71abed0d4626"
 REPO_URL="https://github.com/IMAGINARY/track-n-truck"
 INSTALL_DIR="/opt/track-n-truck"
+SERVER_INSTALL_DIR="$INSTALL_DIR/server"
 
 "${BASH_SOURCE%/*}/../internal/install-source-from-git" "$COMMITISH" "$REPO_URL" "$INSTALL_DIR"
 
-# Build the project
-cd "$INSTALL_DIR" || exit 1
-corepack enable
-corepack use npm@11
-npm install
-npm run build
-corepack disable
+npm --prefix "$INSTALL_DIR" install
+npm --prefix "$INSTALL_DIR" run build
+
+npm  --prefix "$SERVER_INSTALL_DIR" install

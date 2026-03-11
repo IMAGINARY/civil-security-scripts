@@ -1,0 +1,38 @@
+#!/bin/bash
+# This wrapper script is supposed to be visible in ps -a resp. ps -u `id -u` to make
+# it easy to kill it (by a script or manually)
+
+PIDS=()
+function finish {
+    EXIT_CODE=$?
+    kill "${PIDS[@]}" >/dev/null 2>&1
+    exit $EXIT_CODE
+}
+trap finish SIGINT SIGTERM EXIT
+
+APP_DIR="/opt/track-n-truck"
+SERVER_DIR="$APP_DIR/server"
+
+# Reconstruct the arguments array from the environment variable.
+# To safely construct the environment variable, the caller should use something like:
+#   ARGS=()
+#   ARGS+=(--verbose)
+#   ARGS+=("--output" "/path/with spaces/file.txt")
+#   ARGS+=("some positional arg")
+#   QUOTED_ARGS="$(printf '%q ' "${ARGS[@]}")"
+# Now, QUOTED_ARGS can be passed as the environment variable, and it will be correctly
+# parsed back into an array of arguments, even if some of them contain spaces or
+# special characters.
+eval "ARGS=($CIVIL_SECURITY_TRACK_N_TRUCK_SERVER_ARGS)"
+
+# Launch the API server in the background
+# Do not use npm scripts here, because they don't forward signals properly,
+# which causes problems stopping the server gracefully.
+cd "$SERVER_DIR" || exit 1
+node main.js "${ARGS[@]}" &
+
+PID_API_SERVER=$!
+PIDS+=("$PID_API_SERVER")
+
+# Wait for the exhibit to finish or until the signal trap is triggered
+wait -n "${PIDS[@]}"

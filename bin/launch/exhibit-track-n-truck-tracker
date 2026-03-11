@@ -1,0 +1,32 @@
+#!/bin/bash
+# This wrapper script is supposed to be visible in ps -a resp. ps -u `id -u` to make
+# it easy to kill it (by a script or manually)
+
+PIDS=()
+function finish {
+    EXIT_CODE=$?
+    kill "${PIDS[@]}" >/dev/null 2>&1
+    exit $EXIT_CODE
+}
+trap finish SIGINT SIGTERM EXIT
+
+APP_DIR="/opt/track-n-truck"
+APP_DIST_DIR="$APP_DIR/dist"
+
+# Launch the exhibit frontend in the background
+kiosk-browser $KIOSK_OPTS \
+    --app-name-suffix "track-n-truck-tracker" \
+    --cover-displays "0" \
+    --disable-drag \
+    --disable-selection \
+    --overflow=hidden \
+    --reload-unresponsive 60 \
+    --serve "$APP_DIST_DIR" \
+    "map.html?${CIVIL_SECURITY_TRACK_N_TRUCK_QUERY_STRING}" \
+    &
+
+PID_UI=$!
+PIDS+=("$PID_UI")
+
+# Wait for the exhibit to finish or until the signal trap is triggered
+wait -n "${PIDS[@]}"
