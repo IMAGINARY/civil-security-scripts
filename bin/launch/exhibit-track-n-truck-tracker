@@ -16,6 +16,7 @@ APP_DIST_DIR="$APP_DIR/dist"
 # Launch the exhibit frontend in the background
 kiosk-browser $KIOSK_OPTS \
     --app-name-suffix "track-n-truck-tracker" \
+    --remote-debugging-port 9222 \
     --cover-displays "0" \
     --disable-drag \
     --disable-selection \
