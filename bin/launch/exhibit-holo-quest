@@ -10,12 +10,15 @@ function finish {
 }
 trap finish SIGINT SIGTERM EXIT
 
+SCRIPT_DIR="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
 APP_DIR="/opt/holo-quest"
 APP_DIST_DIR="$APP_DIR/dist"
 USER_OVERLAY_DIR="$HOME/.config/holo-quest/overlay"
 
 mkdir -p "$USER_OVERLAY_DIR"
 touch "$USER_OVERLAY_DIR/settings.yml"
+
+PRELOAD_SCRIPT="$SCRIPT_DIR/holo-quest/preload.js"
 
 # Overlay the user-supplied config on top of the exhibit-supplied config and
 # launch the exhibit frontend in the background
@@ -30,6 +33,7 @@ run-with-overlay \
         --overflow=hidden \
         --reload-idle "$((3 * 60))" \
         --reload-unresponsive 60 \
+        --preload "$PRELOAD_SCRIPT" \
         --serve "$APP_DIST_DIR" \
         "index.html?${CIVIL_SECURITY_HOLO_QUEST_QUERY_STRING}" \
 &
