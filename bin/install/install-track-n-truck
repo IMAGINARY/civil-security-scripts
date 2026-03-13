@@ -2,7 +2,7 @@
 
 set -e
 
-COMMITISH="f97c763dc8a3bf5a2993e725d4d1794d8746ed37"
+COMMITISH="ed6d4c097f51623ef4ee41a539ad6d6e0ffd7384"
 REPO_URL="https://github.com/IMAGINARY/track-n-truck"
 INSTALL_DIR="/opt/track-n-truck"
 SERVER_INSTALL_DIR="$INSTALL_DIR/server"
