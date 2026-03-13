@@ -43,6 +43,7 @@ bootstrap() {
         intel-gpu-tools \
         jackd2 \
         joystick \
+        libinput-tools \
         mesa-utils \
         net-tools \
         nodejs \

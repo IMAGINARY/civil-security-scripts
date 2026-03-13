@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+function find_devlinks() {
+    local target="$1"
+    udevadm info --query=property --name="$target" | grep "DEVLINKS=" | sed 's/DEVLINKS=//' | tr ' ' '\n'
+}
+
+>&2 echo "Touch the touchscreen now to monitor corresponding device nodes!"
+>&2 echo
+
+libinput debug-events \
+  | grep --line-buffered TOUCH_DOWN \
+  | sed -u 's/^.\(event[0-9]*\).*/\/dev\/input\/\1/' \
+  | while IFS= read -r event_dev; do echo "$event_dev"; find_devlinks "$event_dev" | sort | sed -u 's/^/  /'; echo; done
