@@ -38,6 +38,7 @@ cd "$TOKEN_READER_DIR" || exit 1
 TSX=$(npx --no-install -p tsx which tsx)
 export PATH="$(dirname "$TSX"):$PATH"
 tsx src/index.ts serve \
+  --no-buzzer \
   -i "${CIVIL_SECURITY_SKILLS_AND_RESOURCES_INVENTORY_TOKEN_READER}" \
  -c "${CIVIL_SECURITY_SKILLS_AND_RESOURCES_CHALLENGE_TOKEN_READER}" \
   &
