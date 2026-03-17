@@ -1,0 +1,42 @@
+#!/bin/bash
+
+# Exit immediately if a command exits with a non-zero status
+set -e
+
+# Configuration
+CIVIL_SECURITY_HOLO_QUEST_SPINNER_DEVICE_NAME_DEFAULT="Ultimarc SpinTrak"
+if [[ -z "${CIVIL_SECURITY_HOLO_QUEST_SPINNER_DEVICE_NAME}" ]]; then
+  echo "CIVIL_SECURITY_HOLO_QUEST_SPINNER_DEVICE_NAME environment variable not set. Using default value: ${CIVIL_SECURITY_HOLO_QUEST_SPINNER_DEVICE_NAME_DEFAULT}"
+  export CIVIL_SECURITY_HOLO_QUEST_SPINNER_DEVICE_NAME="$CIVIL_SECURITY_HOLO_QUEST_SPINNER_DEVICE_NAME_DEFAULT"
+else
+  echo "Using CIVIL_SECURITY_HOLO_QUEST_SPINNER_DEVICE_NAME environment variable. Value: ${CIVIL_SECURITY_HOLO_QUEST_SPINNER_DEVICE_NAME}"
+fi
+
+CIVIL_SECURITY_HOLO_QUEST_SPINNER_DEVICE_PROPS_DEFAULT=(
+    "libinput Accel Profile Enabled" 3 0 1 0 # Flat profile, i.e., no acceleration
+    "libinput Accel Speed" 1 1.0 # Default device speed
+)
+if [[ -z "${CIVIL_SECURITY_HOLO_QUEST_SPINNER_DEVICE_PROPS[*]}" ]]; then
+  echo "CIVIL_SECURITY_HOLO_QUEST_SPINNER_DEVICE_PROPS environment variable not set. Using default value: ${CIVIL_SECURITY_HOLO_QUEST_SPINNER_DEVICE_PROPS_DEFAULT[*]}"
+  export CIVIL_SECURITY_HOLO_QUEST_SPINNER_DEVICE_PROPS=("${CIVIL_SECURITY_HOLO_QUEST_SPINNER_DEVICE_PROPS_DEFAULT[@]}")
+else
+  echo "Using CIVIL_SECURITY_HOLO_QUEST_SPINNER_DEVICE_PROPS environment variable. Value: ${CIVIL_SECURITY_HOLO_QUEST_SPINNER_DEVICE_PROPS[*]}"
+fi
+
+
+i=0
+name="${CIVIL_SECURITY_HOLO_QUEST_SPINNER_DEVICE_NAME}"
+props=("${CIVIL_SECURITY_HOLO_QUEST_SPINNER_DEVICE_PROPS[@]}")
+while [ $i -lt ${#props[@]} ]; do
+    prop_name="${props[$i]}"
+    num_args="${props[$((i+1))]}"
+    
+    # extract the arguments for the current property
+    args=("${props[@]:$((i+2)):$num_args}")
+    
+    # set property value (with debug output)
+    (set -x; xinput set-prop "$name" "$prop_name" "${args[@]}")
+    
+    # Increase index: 1 (property name) + 1 (number of arguments) + n (arguments)
+    i=$((i + 1 + 1 + num_args))
+done
