@@ -2,7 +2,7 @@
 
 set -e
 
-COMMITISH="c822ef1f17d38830218af271851a1a82005d71dc"
+COMMITISH="c014ce1374fedb994905a0ac129e62425c922816"
 REPO_URL="https://github.com/IMAGINARY/skills-and-resources"
 INSTALL_DIR="/opt/skills-and-resources"
 

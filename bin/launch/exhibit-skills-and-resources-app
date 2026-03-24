@@ -16,7 +16,7 @@ APP_DIR="/opt/skills-and-resources"
 QUERY_STRING=""
 # Configure sentry.io data source name (dsn)
 if [ ! -z "${CIVIL_SECURITY_SKILLS_AND_RESOURCES_SENTRY_DSN}" ]; then
-    QUERY_STRING="${QUERY_STRING}&sentry-dsn=${CIVIL_SECURITY_SKILLS_AND_RESOURCES_SENTRY_DSN}"
+    QUERY_STRING="${QUERY_STRING}&sentryDsn=${CIVIL_SECURITY_SKILLS_AND_RESOURCES_SENTRY_DSN}"
 fi
 
 # Launch the exhibit frontend in the background
