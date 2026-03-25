@@ -2,7 +2,7 @@
 
 set -e
 
-COMMITISH="b225df651cd758e027b3f1fcaa04bca782a8e675"
+COMMITISH="5bf03e80bf05138bef042922f94639fe23c445ff"
 REPO_URL="https://github.com/manueleigen/awareness-map"
 INSTALL_DIR="/opt/awareness-map"
 
