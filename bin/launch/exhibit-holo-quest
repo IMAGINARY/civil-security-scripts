@@ -19,6 +19,7 @@ mkdir -p "$USER_OVERLAY_DIR"
 touch "$USER_OVERLAY_DIR/settings.yml"
 
 PRELOAD_SCRIPT="$SCRIPT_DIR/holo-quest/preload.js"
+IDLE_MODE_WORKAROUND_SCRIPT="$SCRIPT_DIR/shared/reset-idle-time-through-events.js"
 
 # Overlay the user-supplied config on top of the exhibit-supplied config and
 # launch the exhibit frontend in the background
@@ -34,6 +35,7 @@ run-with-overlay \
         --reload-idle "$((3 * 60))" \
         --reload-unresponsive 60 \
         --preload "$PRELOAD_SCRIPT" \
+        --preload "$IDLE_MODE_WORKAROUND_SCRIPT" \
         --serve "$APP_DIST_DIR" \
         "index.html?${CIVIL_SECURITY_HOLO_QUEST_QUERY_STRING}" \
 &

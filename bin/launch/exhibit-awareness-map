@@ -12,6 +12,9 @@ trap finish SIGINT SIGTERM EXIT
 
 APP_DIR="/opt/awareness-map"
 
+SCRIPT_DIR="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
+IDLE_MODE_WORKAROUND_SCRIPT="$SCRIPT_DIR/shared/reset-idle-time-through-events.js"
+
 # Kiosk browser options
 QUERY_STRING=""
 
@@ -29,6 +32,7 @@ kiosk-browser $KIOSK_OPTS \
     --overflow=hidden \
     --reload-idle "$((3 * 60))" \
     --reload-unresponsive 60 \
+    --preload "$IDLE_MODE_WORKAROUND_SCRIPT" \
     --serve "$APP_DIR" \
     "index.html?${QUERY_STRING}" \
     &

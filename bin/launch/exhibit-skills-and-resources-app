@@ -12,6 +12,9 @@ trap finish SIGINT SIGTERM EXIT
 
 APP_DIR="/opt/skills-and-resources"
 
+SCRIPT_DIR="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
+IDLE_MODE_WORKAROUND_SCRIPT="$SCRIPT_DIR/shared/reset-idle-time-through-events.js"
+
 # Kiosk browser options
 QUERY_STRING=""
 # Configure sentry.io data source name (dsn)
@@ -26,6 +29,7 @@ kiosk-browser $KIOSK_OPTS \
     --disable-selection \
     --overflow=hidden \
     --reload-idle "$((10 * 60))" \
+    --preload "$IDLE_MODE_WORKAROUND_SCRIPT" \
     --reload-unresponsive 60 \
     --serve "$APP_DIR/dist" \
     "index.html?${QUERY_STRING}" \
