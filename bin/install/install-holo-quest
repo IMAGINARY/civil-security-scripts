@@ -2,7 +2,7 @@
 
 set -e
 
-COMMITISH="v0.7.0"
+COMMITISH="v0.7.1"
 REPO_URL="https://github.com/IMAGINARY/holo-quest"
 INSTALL_DIR="/opt/holo-quest"
 
