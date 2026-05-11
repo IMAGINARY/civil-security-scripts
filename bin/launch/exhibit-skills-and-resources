@@ -15,6 +15,9 @@ trap finish SIGINT SIGTERM EXIT
 PID_TOKEN_READER=$!
 PIDS="$PIDS $PID_TOKEN_READER"
 
+# Give the token reader some time to start up
+sleep 3 &
+wait $!
 
 # Launch the exhibit frontend in the background
 "${BASH_SOURCE%/*}/exhibit-skills-and-resources-app" &
