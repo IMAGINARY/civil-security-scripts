@@ -37,7 +37,7 @@ run-with-overlay \
         --preload "$PRELOAD_SCRIPT" \
         --preload "$IDLE_MODE_WORKAROUND_SCRIPT" \
         --serve "$APP_DIST_DIR" \
-        "index.html?${CIVIL_SECURITY_HOLO_QUEST_QUERY_STRING}" \
+        "index.html?settings=settings.yml&${CIVIL_SECURITY_HOLO_QUEST_QUERY_STRING}" \
 &
 
 PID_UI=$!
